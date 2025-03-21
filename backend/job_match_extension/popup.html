@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyJob</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="icons/logo.png" alt="EasyJob Logo" class="logo">
+            <h1>EasyJob</h1>
+        </header>
+        
+        <div id="upload-section" class="section">
+            <h2>Upload Your Resume</h2>
+            <div class="upload-box">
+                <input type="file" id="resume-upload" accept=".pdf,.docx,.doc,.txt" hidden>
+                <label for="resume-upload" class="upload-btn">Select File</label>
+                <p id="file-name">No file selected</p>
+            </div>
+        </div>
+
+        <div id="match-section" class="section hidden">
+            <h2>Job Match Analysis</h2>
+            <div class="job-title">
+                <h3 id="job-title-text">Job Title</h3>
+                <p id="job-company">Company</p>
+            </div>
+            
+            <div class="match-result">
+                <div class="progress-container">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+                <div class="match-percentage">
+                    <span id="match-value">0</span>%
+                </div>
+            </div>
+
+            <div class="match-details">
+                <div class="match-category">
+                    <h4>Skills Match</h4>
+                    <p id="skills-match">0%</p>
+                </div>
+                <div class="match-category">
+                    <h4>Experience Match</h4>
+                    <p id="experience-match">0%</p>
+                </div>
+                <div class="match-category">
+                    <h4>Keywords Match</h4>
+                    <p id="keywords-match">0%</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="suggestions-section" class="section hidden">
+            <h2>Improvement Suggestions</h2>
+            <div class="missing-skills">
+                <h3>Missing Skills</h3>
+                <ul id="missing-skills-list">
+                    <!-- Will be populated by JavaScript -->
+                </ul>
+            </div>
+            
+            <div class="suggestions">
+                <h3>AI Suggestions</h3>
+                <div id="ai-suggestions">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <div id="actions-section" class="section">
+            <button id="scan-btn" disabled>Scan Current Job</button>
+            <button id="improve-btn" disabled>Generate Resume Suggestions</button>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>

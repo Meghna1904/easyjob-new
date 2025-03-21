@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "EasyJob - Job Match Assistant",
+  "version": "1.0",
+  "description": "Match your resume with job descriptions and get improvement suggestions",
+  "permissions": ["activeTab", "storage", "scripting", "http://localhost:5000/*"],
+  "host_permissions": ["http://localhost:5000/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.linkedin.com/jobs/*", "*://*.indeed.com/*", "*://*.naukri.com/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
+
