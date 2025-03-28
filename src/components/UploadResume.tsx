@@ -59,17 +59,19 @@ const UploadResume: React.FC = () => {
       setError('Please select a file to upload');
       return;
     }
-
+  
     setLoading(true);
     setError('');
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setLoading(false);
       setAnalyzing(true);
-
+  
       const data = await parseResume(selectedFile);
       await new Promise(resolve => setTimeout(resolve, 1500));
-
+  
+      setResumeData(data);
+      // Store the full resume data in the ResumeContext
       setResumeData(data);
       setAnalyzing(false);
       setUploadComplete(true);

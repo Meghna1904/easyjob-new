@@ -1,124 +1,117 @@
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 import requests
 from bs4 import BeautifulSoup
 import logging
+import uuid
+from datetime import datetime, timedelta
+import random
+
+app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})  # Restrict CORS to frontend origin
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-def fetch_simplyhired_jobs(query, location="new york"):
-    """
-    Fetch HTML content from SimplyHired for job listings.
-    """
-    query = query.replace(" ", "+")
-    location = location.replace(" ", "+")
-    url = f"https://www.simplyhired.com/search?q={query}&l={location}"
+def fetch_joblistopia_jobs():
+    url = "https://joblistopia.lovable.app/"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
     }
-
     try:
-        logger.info(f"Fetching SimplyHired job listings for query: {query}, location: {location}")
+        logger.info(f"Fetching Joblistopia job listings from: {url}")
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
-        logger.debug(f"Raw HTML snippet: {response.text[:500]}...")
         return response.text
     except requests.RequestException as e:
-        logger.error(f"Error fetching SimplyHired jobs: {e}")
+        logger.error(f"Error fetching Joblistopia jobs: {e}")
         return None
 
-def parse_simplyhired_jobs(html):
-    """
-    Parse SimplyHired HTML to extract job listing details, aiming for at least 5.
-    """
+def parse_joblistopia_jobs(html):
     if not html:
-        return []
-
+        logger.warning("No HTML content to parse, using mock data")
+        return [
+            {
+                "id": str(uuid.uuid4()),
+                "title": "Senior Frontend Developer",
+                "company": "TechGlobe Inc.",
+                "location": "San Francisco, CA",
+                "salary": "$120,000 - $150,000",
+                "description": "We are looking for an experienced Frontend Developer to join our team. The ideal candidate should have a strong understanding of Python, React, TypeScript, and modern frontend development practices.",
+                "requirements": ["5+ years of experience in frontend development", "Strong proficiency in React, TypeScript, and modern JavaScript"],
+                "postedDate": "2023-09-15",
+                "matchScore": 0.8,
+                "skills": ["Python", "React", "TypeScript", "CSS", "HTML", "JavaScript"],
+                "link": "https://joblistopia.lovable.app/job1"
+            }
+        ]
     soup = BeautifulSoup(html, "html.parser")
     results = []
-
-    # Find job cards (SimplyHired structure as of March 2025)
-    job_cards = soup.select("li[class*='job-listing']")  # Matches job listing elements
-    logger.debug(f"Found {len(job_cards)} job cards in HTML.")
+    job_cards = soup.select("div[class*='job'], li[class*='job'], article[class*='job']")
+    logger.debug(f"Found {len(job_cards)} job cards in HTML")
 
     for card in job_cards:
         try:
-            # Extract title
-            title_elem = card.find("a", class_="SerpJob-titleLink") or card.find("h2")
-            title = title_elem.text.strip() if title_elem else "No title"
-
-            # Extract company
-            company_elem = card.find("span", class_="jobposting-company")
-            company = company_elem.text.strip() if company_elem else "Unknown"
-
-            # Extract location
-            location_elem = card.find("span", class_="jobposting-location")
-            location = location_elem.text.strip() if location_elem else "Unknown"
-
-            # Extract description (snippet)
-            desc_elem = card.find("p", class_="jobposting-snippet")
+            title = (card.find(["h1", "h2", "h3"]) or card.find("a", class_=lambda x: x and "title" in x.lower()) or {}).text.strip() or "No title"
+            company = (card.find("span", class_=lambda x: x and "company" in x.lower()) or {}).text.strip() or "Unknown"
+            location = (card.find("span", class_=lambda x: x and "location" in x.lower()) or {}).text.strip() or "Unknown"
+            desc_elem = card.find("p") or card.find("div", class_=lambda x: x and "desc" in x.lower())
             description = desc_elem.text.strip() if desc_elem else "No description"
+            link_elem = card.find("a")
+            link = "https://joblistopia.lovable.app/" + link_elem["href"] if link_elem and "href" in link_elem.attrs and not link_elem["href"].startswith("http") else link_elem.get("href", "No link")
 
-            # Extract link
-            link_elem = card.find("a", class_="SerpJob-titleLink")
-            link = "https://www.simplyhired.com" + link_elem["href"] if link_elem and "href" in link_elem.attrs else "No link"
-
-            logger.debug(f"Parsed - Title: {title}, Company: {company}, Link: {link[:50]}...")
+            job_id = str(uuid.uuid4())
+            salary = f"${random.randint(60, 150)}K - ${random.randint(151, 200)}K"
+            requirements = ["3+ years experience", "Bachelor's degree", "Strong communication skills"]
+            posted_date = (datetime.now() - timedelta(days=random.randint(1, 30))).strftime("%Y-%m-%d")
+            match_score = random.uniform(0.6, 0.95)
+            skills = ["Python", "JavaScript", "React", "SQL", "AWS"]
 
             results.append({
+                "id": job_id,
                 "title": title,
                 "company": company,
                 "location": location,
-                "description": description[:200] + "..." if len(description) > 200 else description,
+                "salary": salary,
+                "description": description,
+                "requirements": requirements,
+                "postedDate": posted_date,
+                "matchScore": match_score,
+                "skills": skills,
                 "link": link
             })
-
-            # Stop at 5 valid results
-            if len(results) >= 5:
-                break
-
         except Exception as e:
             logger.error(f"Error parsing job card: {e}")
             continue
-
-    # Fallback mock data if fewer than 5 jobs are found
-    if len(results) < 5:
-        logger.warning("Fewer than 5 jobs found. Adding mock data to reach 5.")
-        mock_jobs = [
-            {"title": "Software Engineer", "company": "Mock Tech", "location": "New York, NY", "description": "Develop with Python and JS...", "link": "https://mock.com/job1"},
-            {"title": "Web Developer", "company": "Mock Web", "location": "New York, NY", "description": "Build websites with JS...", "link": "https://mock.com/job2"},
-            {"title": "Backend Developer", "company": "Mock Data", "location": "New York, NY", "description": "Backend with Python...", "link": "https://mock.com/job3"},
-            {"title": "Frontend Engineer", "company": "Mock UI", "location": "New York, NY", "description": "Design with JS...", "link": "https://mock.com/job4"},
-            {"title": "Full Stack Developer", "company": "Mock Full", "location": "New York, NY", "description": "Full stack with Python and JS...", "link": "https://mock.com/job5"}
-        ]
-        results.extend(mock_jobs[:(5 - len(results))])
-
-    return results[:5]  # Ensure exactly 5
-
-def test_job_scraping():
-    """
-    Main function to test web scraping job listings from SimplyHired.
-    """
-    query = "software engineer Python JavaScript remote"
-    location = "new york"
-    html = fetch_simplyhired_jobs(query, location)
     
-    if html:
-        job_listings = parse_simplyhired_jobs(html)
-        if job_listings:
-            logger.info(f"Found {len(job_listings)} job listings:")
-            for i, job in enumerate(job_listings, 1):
-                logger.info(f"{i}. Title: {job['title']}")
-                logger.info(f"   Company: {job['company']}")
-                logger.info(f"   Location: {job['location']}")
-                logger.info(f"   Description: {job['description']}")
-                logger.info(f"   Link: {job['link']}")
-        else:
-            logger.info("No job listings parsed from SimplyHired HTML.")
-    else:
-        logger.info("Failed to fetch job listings from SimplyHired.")
+    return results
+
+@app.route('/api/match-jobs', methods=['POST'])
+def match_jobs():
+    logger.info("Received request at /api/match-jobs")
+    data = request.get_json()
+    logger.debug(f"Request data: {data}")
+
+    skills = data.get('skills', [])
+    if not skills:
+        logger.warning("No skills provided in request")
+        return jsonify({"error": "No skills provided"}), 400
+
+    logger.debug(f"Received skills: {skills}")
+
+    html = fetch_joblistopia_jobs()
+    all_jobs = parse_joblistopia_jobs(html)
+
+    matched_jobs = []
+    for job in all_jobs:
+        matched_skills = [skill for skill in skills if skill.lower() in job["description"].lower() or skill.lower() in job["title"].lower()]
+        if matched_skills:
+            job["matchScore"] = min(0.95, 0.6 + (len(matched_skills) * 0.1))
+            matched_jobs.append(job)
+
+    logger.info(f"Returning {len(matched_jobs)} matched jobs")
+    return jsonify({"jobs": matched_jobs[:5]})
 
 if __name__ == "__main__":
-    test_job_scraping()
+    app.run(debug=True, host='0.0.0.0', port=5001)

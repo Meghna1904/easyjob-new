@@ -2,7 +2,7 @@
 import { motion } from 'framer-motion';
 import { Briefcase, MapPin, Clock, DollarSign, Star, BookOpen } from 'lucide-react';
 
-export interface Job {
+ interface Job {
   id: string;
   title: string;
   company: string;
@@ -103,3 +103,4 @@ export function JobCard({ job, index }: JobCardProps) {
     </motion.div>
   );
 }
+export default JobCard;

@@ -348,6 +348,36 @@ def upload_file():
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({'error': f'Processing error: {str(e)}'}), 500
-
+@app.route('/parse-text', methods=['POST'])
+def parse_text():
+    data = request.get_json()
+    if not data or 'resume' not in data:
+        return jsonify({'error': 'No resume text provided'}), 400
+    
+    text = data['resume']
+    if not text.strip():
+        return jsonify({'error': 'Empty resume text'}), 400
+    
+    try:
+        name = extract_name(text)
+        emails, phones = extract_contact_info(text)
+        parsed_data = parse_resume(text)
+        response_data = {
+            'name': name,
+            'emails': emails,
+            'phone_numbers': phones,
+            'skills': parsed_data['skills'],
+            'education': parsed_data['education'],
+            'experience': parsed_data['experience'],
+            'projects': parsed_data['projects'],
+            'certifications': parsed_data['certifications'],
+            'matched_jobs': [],
+            'summary': parsed_data['summary'],
+            'parsedText': text
+        }
+        return jsonify({'success': True, 'data': response_data})
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'error': f'Processing error: {str(e)}'}), 500
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
