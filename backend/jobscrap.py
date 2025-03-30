@@ -87,9 +87,15 @@ def parse_joblistopia_jobs(html):
     
     return results
 
-@app.route('/api/match-jobs', methods=['POST'])
+@app.route('/', methods=['GET', 'POST'])
 def match_jobs():
     logger.info("Received request at /api/match-jobs")
+    
+    if request.method == 'GET':
+        html = fetch_joblistopia_jobs()
+        all_jobs = parse_joblistopia_jobs(html)
+        return jsonify({"jobs": all_jobs[:5]})
+    
     data = request.get_json()
     logger.debug(f"Request data: {data}")
 
@@ -110,8 +116,9 @@ def match_jobs():
             job["matchScore"] = min(0.95, 0.6 + (len(matched_skills) * 0.1))
             matched_jobs.append(job)
 
+    matched_jobs.sort(key=lambda x: x["matchScore"], reverse=True)  # Sort by match score
     logger.info(f"Returning {len(matched_jobs)} matched jobs")
-    return jsonify({"jobs": matched_jobs[:5]})
+    return jsonify({"jobs": matched_jobs[:5]})  # Return top 5 jobs
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5001)
